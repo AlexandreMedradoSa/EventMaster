@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+        }
+        .container {
+            max-width: 500px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-align: center;
+            color: #007bff;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            transition: background-color 0.3s, transform 0.3s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            transform: scale(1.02);
+        }
+        .btn-secondary {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .invalid-feedback {
+            display: none;
+        }
+        .is-invalid + .invalid-feedback {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Cadastro</h1>
+        <form id="registerForm">
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" id="nome" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="senha" class="form-label">Senha</label>
+                <input type="password" class="form-control" id="senha" required minlength="6">
+                <div class="invalid-feedback">
+                    A senha deve ter no mínimo 6 caracteres.
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Eu vou</label>
+                <select class="form-control" id="role" required>
+                    <option value="participante">Participar de Eventos</option>
+                    <option value="organizador">Organizar Eventos</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Cadastrar</button>
+            <button type="button" class="btn btn-secondary" onclick="location.href='index.html'">Voltar para Home</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const role = document.getElementById('role').value;
+
+            if (senha.length < 6) {
+                const senhaInput = document.getElementById('senha');
+                senhaInput.classList.add('is-invalid');
+                return;
+            }
+
+            try {
+                const response = await axios.post('http://localhost:3000/register', {
+                    nome,
+                    email,
+                    senha,
+                    role
+                });
+                console.log(response)
+                if (response.statusText == 'Created') {
+                    alert('Cadastro realizado com sucesso!');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro:', error.message);
+                alert('Erro ao cadastrar. Por favor, tente novamente.');
+            }
+        });
+    </script>
+</body>
+</html>

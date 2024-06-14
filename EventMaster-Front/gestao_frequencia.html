@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Frequência - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a.navbar-brand {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 220px);
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="event_management.html">Gerenciamento de Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="certificados.html">Meus Certificados</a>
+        <a href="admin.html" id="admin-link">Administração</a>
+        <a href="gestao_frequencia.html" id="frequencia-link">Gestão de Frequência</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Gestão de Frequência
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1>Gestão de Frequência</h1>
+            <div id="eventList" class="mt-4">
+                <!-- Eventos serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const id_supabase = localStorage.getItem('id_supabase');
+        const role = localStorage.getItem('role');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (role !== 'admin' && role !== 'organizador') {
+                alert('Você não tem permissão para acessar esta página.');
+                window.location.href = 'dashboard.html';
+            }
+
+            if (role !== 'admin') {
+                document.getElementById('admin-link').style.display = 'none';
+            }
+
+            await carregarEventos();
+        });
+
+        async function carregarEventos() {
+            try {
+                const responseEventos = await axios.post('http://localhost:3000/listar-frequencias', {
+                    id_usuario: id_supabase,
+                    role
+                });
+                const frequencias = responseEventos.data;
+                const eventList = document.getElementById('eventList');
+                eventList.innerHTML = '';
+
+                frequencias.forEach(frequencia => {
+                    const eventItem = document.createElement('div');
+                    eventItem.classList.add('card');
+                    eventItem.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${frequencia.evento_titulo}</h5>
+                            <p class="card-text"><strong>Nome do Usuário:</strong> ${frequencia.usuario_nome}</p>
+                            <p class="card-text"><strong>Data:</strong> ${new Date(frequencia.data).toLocaleDateString()}</p>
+                            <p class="card-text"><strong>Presente:</strong> ${frequencia.presente ? 'Sim' : 'Não'}</p>
+                            <button class="btn ${frequencia.certificadoEmitido ? 'btn-secondary' : 'btn-success'}" ${frequencia.certificadoEmitido ? 'disabled' : ''} onclick="emitirCertificado('${frequencia.id_usuario}', '${frequencia.id_evento}')">
+                                ${frequencia.certificadoEmitido ? 'Certificado já emitido' : 'Emitir Certificado'}
+                            </button>
+                        </div>
+                    `;
+                    eventList.appendChild(eventItem);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar frequências:', error);
+            }
+        }
+
+        async function emitirCertificado(id_usuario, id_evento) {
+            try {
+                const response = await axios.post('http://localhost:3000/emitir-certificado', {
+                    id_usuario,
+                    id_evento
+                });
+
+                if (response.data.message) {
+                    alert('Certificado emitido com sucesso!');
+                    await carregarEventos();
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro ao emitir certificado:', error);
+                alert('Erro ao tentar emitir certificado. Por favor, tente novamente.');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('role');
+            localStorage.removeItem('id_supabase');
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

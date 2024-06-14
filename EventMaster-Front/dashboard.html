@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a.navbar-brand {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 220px);
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .welcome-message {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="events.html">Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="certificados.html">Meus Certificados</a>
+        <a href="admin.html" id="admin-link">Administração</a>
+        <a href="gestao_frequencia.html" id="frequencia-link">Gestão de Frequência</a>
+        <a href="submissions.html">Submissão de Trabalhos</a>
+        <a href="submissions-feedback.html" id="feedback-link">Avaliação de Trabalhos</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Bem-vindo ao seu painel de controle
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="welcome-message font-weight-bold" id="welcomeMessage"></p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Meus Eventos</h5>
+                            <p class="card-text">Veja e gerencie os eventos em que você está inscrito.</p>
+                            <a href="events.html" class="btn btn-primary">Ver Eventos</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="manageEventsCard">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Gerenciamento de Eventos</h5>
+                            <p class="card-text">Crie e gerencie seus eventos.</p>
+                            <a href="event_management.html" class="btn btn-primary">Gerenciar Eventos</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="submissionCard">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Submissão e Avaliação de Trabalhos</h5>
+                            <p class="card-text">Submeta e receba avaliações de trabalhos acadêmicos.</p>
+                            <a href="submissions.html" class="btn btn-primary">Submeter Trabalhos</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="feedbackCard">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Avaliação de Trabalhos</h5>
+                            <p class="card-text">Avalie os trabalhos submetidos.</p>
+                            <a href="submissions-feedback.html" class="btn btn-primary">Avaliar Trabalhos</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="attendanceCard">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Frequências</h5>
+                            <p class="card-text">Registre e gerencie suas frequências nos eventos.</p>
+                            <a href="attendance.html" class="btn btn-primary">Registrar Frequência</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" id="certificatesCard">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Meus Certificados</h5>
+                            <p class="card-text">Visualize e baixe seus certificados.</p>
+                            <a href="certificados.html" class="btn btn-primary">Ver Certificados</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const id_supabase = localStorage.getItem('id_supabase');
+        const role = localStorage.getItem('role');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await axios.post('http://localhost:3000/user-info', {
+                    id_supabase,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.data) {
+                    throw new Error('Erro ao buscar informações do usuário');
+                }
+
+                const userData = response.data;
+                const welcomeMessage = document.getElementById('welcomeMessage');
+                welcomeMessage.textContent = `Olá, ${userData.nome}`;
+
+                if (role !== 'admin' && role !== 'organizador') {
+                    document.getElementById('manageEventsCard').style.display = 'none';
+                    document.getElementById('frequencia-link').style.display = 'none';
+                    document.getElementById('feedbackCard').style.display = 'none';
+                }
+
+                if (role !== 'admin') {
+                    document.getElementById('admin-link').style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Erro:', error.message);
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('role');
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

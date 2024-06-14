@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos Disponíveis - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a.navbar-brand {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 220px);
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="event_management.html">Gerenciamento de Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="certificados.html">Meus Certificados</a>
+        <a href="admin.html" id="admin-link">Administração</a>
+        <a href="gestao_frequencia.html" id="frequencia-link">Gestão de Frequência</a>
+        <a href="submissions.html">Submissão de Trabalhos</a>
+        <a href="submissions-feedback.html" id="feedback-link">Avaliação de Trabalhos</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Eventos Disponíveis
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1>Eventos Disponíveis</h1>
+            <div class="row" id="eventList">
+                <!-- Lista de eventos será carregada aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const id_supabase = localStorage.getItem('id_supabase');
+        const role = localStorage.getItem('role');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (role !== 'admin') {
+                document.getElementById('admin-link').style.display = 'none';
+            }
+
+            await carregarEventos();
+        });
+
+        async function carregarEventos() {
+            try {
+                const responseEventos = await axios.get('http://localhost:3000/event-list');
+                const eventos = responseEventos.data;
+
+                const responseInscricoes = await axios.post('http://localhost:3000/minhas-inscricoes', {
+                    id_usuario: id_supabase,
+                });
+                const inscricoes = responseInscricoes.data.map(inscricao => inscricao.id_evento);
+
+                const responsePresenca = await axios.post('http://localhost:3000/eventos-com-presenca', {
+                    id_usuario: id_supabase,
+                });
+                const eventosComPresenca = responsePresenca.data;
+
+                const eventList = document.getElementById('eventList');
+                eventList.innerHTML = '';
+
+                eventos.forEach(evento => {
+                    const isInscrito = inscricoes.includes(evento.id);
+                    const isPresente = eventosComPresenca.includes(evento.id);
+
+                    if (!isPresente) {
+                        const eventItem = document.createElement('div');
+                        eventItem.classList.add('col-md-4');
+                        eventItem.innerHTML = `
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${evento.titulo}</h5>
+                                    <p class="card-text">${evento.descricao}</p>
+                                    <p class="card-text"><strong>Data de Início:</strong> ${new Date(evento.data_inicio).toLocaleString()}</p>
+                                    <p class="card-text"><strong>Data de Fim:</strong> ${new Date(evento.data_fim).toLocaleString()}</p>
+                                    <p class="card-text"><strong>Localização:</strong> ${evento.localizacao}</p>
+                                    <p class="card-text"><strong>Tipo de Evento:</strong> ${evento.tipo_evento}</p>
+                                    <button class="btn btn-${isInscrito ? 'danger' : 'primary'}" onclick="${isInscrito ? `cancelarInscricao(${evento.id})` : `inscreverEvento(${evento.id})`}">
+                                        ${isInscrito ? 'Cancelar Inscrição' : 'Inscrever-se'}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        eventList.appendChild(eventItem);
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao carregar eventos:', error);
+            }
+        }
+
+        async function inscreverEvento(id_evento) {
+            try {
+                const response = await axios.post('http://localhost:3000/inscrever', {
+                    id_usuario: id_supabase,
+                    id_evento
+                });
+
+                if (response.data.message) {
+                    alert('Inscrição realizada com sucesso!');
+                    await carregarEventos();
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro ao inscrever-se no evento:', error);
+                alert('Erro ao tentar inscrever-se no evento. Por favor, tente novamente.');
+            }
+        }
+
+        async function cancelarInscricao(id_evento) {
+            try {
+                const response = await axios.post('http://localhost:3000/cancelar-inscricao', {
+                    id_usuario: id_supabase,
+                    id_evento
+                });
+
+                if (response.data.message) {
+                    alert('Inscrição cancelada com sucesso!');
+                    await carregarEventos();
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro ao cancelar inscrição:', error);
+                alert('Erro ao tentar cancelar inscrição. Por favor, tente novamente.');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('role');
+            localStorage.removeItem('id_supabase');
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

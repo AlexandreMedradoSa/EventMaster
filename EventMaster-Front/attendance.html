@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Frequência - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a.navbar-brand {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 220px);
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .welcome-message {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="events.html">Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="certificados.html">Meus Certificados</a>
+        <a href="admin.html" id="admin-link">Administração</a>
+        <a href="gestao_frequencia.html" id="frequencia-link">Gestão de Frequência</a>
+        <a href="submissions.html">Submissão de Trabalhos</a>
+        <a href="submissions-feedback.html" id="feedback-link">Avaliação de Trabalhos</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Registrar Frequência
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1>Registrar Frequência</h1>
+            <div id="eventList" class="mt-4">
+                <!-- Eventos serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const id_supabase = localStorage.getItem('id_supabase');
+        const role = localStorage.getItem('role');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await axios.post('http://localhost:3000/my-events', {
+                    id_supabase,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const events = response.data;
+                const eventList = document.getElementById('eventList');
+                for (const event of events) {
+                    const isCertificateIssued = await verificarCertificado(event.id);
+                    if (isCertificateIssued) continue;
+
+                    const isRegistered = await verificarFrequencia(event.id);
+                    const eventCard = document.createElement('div');
+                    eventCard.className = 'card';
+                    eventCard.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${event.titulo}</h5>
+                            <p class="card-text">${event.descricao}</p>
+                            <p class="card-text"><strong>Data de Início:</strong> ${new Date(event.data_inicio).toLocaleString()}</p>
+                            <p class="card-text"><strong>Data de Fim:</strong> ${new Date(event.data_fim).toLocaleString()}</p>
+                            <p class="card-text"><strong>Localização:</strong> ${event.localizacao}</p>
+                            <p class="card-text"><strong>Tipo de Evento:</strong> ${event.tipo_evento}</p>
+                            <label for="date-${event.id}">Data de Presença:</label>
+                            <input type="date" class="form-control mb-2" id="date-${event.id}" ${isRegistered ? 'disabled' : ''}>
+                            <button class="btn btn-primary" onclick="registrarPresenca(${event.id})" ${isRegistered ? 'disabled' : ''}>${isRegistered ? 'Presença Confirmada' : 'Registrar Presença'}</button>
+                        </div>
+                    `;
+                    eventList.appendChild(eventCard);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar eventos:', error.message);
+            }
+
+            if (role !== 'admin') {
+                document.getElementById('admin-link').style.display = 'none';
+            }
+            if (role !== 'admin' && role !== 'organizador') {
+                document.getElementById('frequencia-link').style.display = 'none';
+                document.getElementById('feedback-link').style.display = 'none';
+            }
+        });
+
+        async function verificarFrequencia(eventId) {
+            try {
+                const response = await axios.post('http://localhost:3000/verificar-frequencia', {
+                    id_usuario: id_supabase,
+                    id_evento: eventId
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                return response.data.frequenciaRegistrada;
+            } catch (error) {
+                console.error('Erro ao verificar frequência:', error.message);
+                return false;
+            }
+        }
+
+        async function verificarCertificado(eventId) {
+            try {
+                const response = await axios.post('http://localhost:3000/verificar-certificado', {
+                    id_usuario: id_supabase,
+                    id_evento: eventId
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                return response.data.certificadoEmitido;
+            } catch (error) {
+                console.error('Erro ao verificar certificado:', error.message);
+                return false;
+            }
+        }
+
+        async function registrarPresenca(eventId) {
+            const dateInput = document.getElementById(`date-${eventId}`).value;
+            if (!dateInput) {
+                alert('Por favor, selecione a data.');
+                return;
+            }
+
+            try {
+                const response = await axios.post('http://localhost:3000/registrar-frequencia', {
+                    id_usuario: id_supabase,
+                    id_evento: eventId,
+                    data: dateInput
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.data.message) {
+                    alert('Presença registrada com sucesso!');
+                    document.getElementById(`date-${eventId}`).disabled = true;
+                    document.getElementById(`date-${eventId}`).nextElementSibling.disabled = true;
+                    document.getElementById(`date-${eventId}`).nextElementSibling.textContent = 'Presença Confirmada';
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro ao registrar presença:', error.message);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('role');
+            localStorage.removeItem('id_supabase');
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

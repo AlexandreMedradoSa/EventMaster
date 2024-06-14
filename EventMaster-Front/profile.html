@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: 100%;
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand text-center text-white" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="events.html">Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Atualize suas informações pessoais
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Meu Perfil</h5>
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Nova Senha</label>
+                            <input type="password" class="form-control" id="password" minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script>
+        const id_supabase = localStorage.getItem('id_supabase')
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await axios.post('http://localhost:3000/user-info', {
+                    id_supabase,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.data) {
+                    throw new Error('Erro ao buscar informações do usuário');
+                }
+
+                const userData = response.data;
+
+                document.getElementById('name').value = userData.nome;
+                document.getElementById('email').value = userData.email;
+
+            } catch (error) {
+                console.error('Erro:', error.message);
+            }
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await axios.put('http://localhost:3000/profile', {
+                    name,
+                    email,
+                    password,
+                    id_supabase,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.data.message) {
+                    alert('Perfil atualizado com sucesso!');
+                } else {
+                    alert(`Erro: ${response.data.error}`);
+                }
+            } catch (error) {
+                console.error('Erro:', error.message);
+                alert('Erro ao atualizar perfil. Por favor, tente novamente.');
+            }
+        });
+
+        function logout() {
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Certificados - EventMaster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ddd;
+            display: block;
+        }
+        .sidebar a.navbar-brand {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+            color: white;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 220px);
+        }
+        .navbar {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a class="navbar-brand" href="#">EventMaster</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="events.html">Eventos</a>
+        <a href="profile.html">Perfil</a>
+        <a href="certificados.html">Meus Certificados</a>
+        <a href="admin.html" id="admin-link">Administração</a>
+        <a href="gestao_frequencia.html" id="frequencia-link">Gestão de Frequência</a>
+        <a href="submissions.html">Submissão de Trabalhos</a>
+        <a href="submissions-feedback.html" id="feedback-link">Avaliação de Trabalhos</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    Meus Certificados
+                </span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1>Meus Certificados</h1>
+            <div id="certificadosList" class="mt-4">
+                <!-- Certificados serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const id_supabase = localStorage.getItem('id_supabase');
+        const role = localStorage.getItem('role');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await carregarCertificados();
+
+            if (role !== 'admin') {
+                document.getElementById('admin-link').style.display = 'none';
+            }
+            if (role !== 'admin' && role !== 'organizador') {
+                document.getElementById('frequencia-link').style.display = 'none';
+                document.getElementById('feedback-link').style.display = 'none';
+            }
+        });
+
+        async function carregarCertificados() {
+            try {
+                const response = await axios.post('http://localhost:3000/meus-certificados', {
+                    id_usuario: id_supabase,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const certificados = response.data;
+                const certificadosList = document.getElementById('certificadosList');
+                certificadosList.innerHTML = '';
+
+                certificados.forEach(certificado => {
+                    const dataEmissao = new Date(certificado.data_emissao);
+                    const dataFormatada = dataEmissao.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                    const certificadoItem = document.createElement('div');
+                    certificadoItem.classList.add('card');
+                    certificadoItem.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${certificado.eventos.titulo}</h5>
+                            <p class="card-text"><strong>Data de Emissão:</strong> ${dataFormatada}</p>
+                            <a href="#" class="btn btn-primary" onclick="baixarCertificado('${certificado.id}')">Baixar Certificado</a>
+                        </div>
+                    `;
+                    certificadosList.appendChild(certificadoItem);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar certificados:', error.message);
+            }
+        }
+
+        function baixarCertificado(id) {
+            alert(`Baixando certificado com ID: ${id}`);
+        }
+
+        function logout() {
+            localStorage.removeItem('role');
+            localStorage.removeItem('id_supabase');
+            alert('Logout realizado com sucesso!');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
